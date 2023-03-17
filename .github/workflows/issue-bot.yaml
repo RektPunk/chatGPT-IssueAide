@@ -1,0 +1,51 @@
+name: Issue chatgpt bot
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  chatgpt_comment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install python packages
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Get comment
+      uses: jannekem/run-python-script-action@v1
+      id: chatgpt_message
+      with:
+        comment-body: ${{ github.event.comment.body }}
+        openai-key: ${{ secrets.OPENAI_KEY }}
+        script: |
+          import openai
+          def get_openai_response(input_text: str) -> str:
+            openai.api_key = get_input("openai-key")
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "너는 짧게 대답하는 봇이야."},
+                    {"role": "user", "content": input_text},
+                ],
+            )
+            return response["choices"][0]["message"]["content"]
+          
+          comment_body = get_input("comment-body")
+          _message = get_openai_response(comment_body)
+          set_output("message", _message)
+    - name: Create comment
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: |
+          ${{ steps.chatgpt_message.outputs.message }}
+        reactions: '+1'
