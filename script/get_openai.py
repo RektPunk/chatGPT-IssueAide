@@ -4,7 +4,7 @@ import openai
 
 def get_openai_response(input_text: str) -> str:
     ## open api key
-    openai.api_key: str = "****" #FIXME
+    openai.api_key: str = "****"  # FIXME
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
